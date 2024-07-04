@@ -1,0 +1,68 @@
+import lxml.etree as etree
+from google.colab import drive
+import pandas as pd
+
+# Mount your Google Drive
+drive.mount('/content/drive')
+
+# List of Dublin Core element names
+dc_elements = [
+    "title", "creator", "subject", "description", "publisher", "contributor", "date", "type",
+    "format", "identifier", "source", "language", "relation", "coverage", "rights", "alternative",
+    "tableOfContents", "abstract", "created", "valid", "available", "issued", "modified",
+    "dateAccepted", "dateCopyrighted", "dateSubmitted", "extent", "medium", "isVersionOf",
+    "hasVersion", "isReplacedBy", "replaces", "isRequiredBy", "requires", "isPartOf", "hasPart",
+    "isReferencedBy", "references", "isFormatOf", "hasFormat", "conformsTo", "spatial", "temporal",
+    "audience", "accrualMethod", "accrualPeriodicity", "accrualPolicy", "instructionalMethod",
+    "provenance", "rightsHolder", "mediator", "educationLevel", "accessRights", "license",
+    "bibliographicCitation"
+]
+
+# Paths to your Dublin Core metadata XML files on Google Drive (up to 10 files)
+metadata_paths = [
+    "/content/drive/My Drive/Thesis_23/100095_oai_pmh.xml",
+    "/content/drive/My Drive/Thesis_23/3504_oai_pmh.xml",
+    "/content/drive/My Drive/Thesis_23/35507_oai_pmh.xml",
+    "/content/drive/My Drive/Thesis_23/174_oai_pmh.xml",
+    "/content/drive/My Drive/Thesis_23/7847_oai_pmh.xml",
+    "/content/drive/My Drive/Thesis_23/38385_oai_pmh.xml",
+    "/content/drive/My Drive/Thesis_23/8459_oai_pmh.xml",
+    "/content/drive/My Drive/Thesis_23/9589_oai_pmh.xml",
+    "/content/drive/My Drive/Thesis_23/161361_oai_pmh.xml",
+    "/content/drive/My Drive/Thesis_23/35546_oai_pmh.xml",
+    # Add paths for other files here
+]
+
+results = []
+
+for metadata_path in metadata_paths:
+    # Load the Dublin Core metadata XML file
+    metadata_tree = etree.parse(metadata_path)
+    metadata_root = metadata_tree.getroot()
+
+    # Create a dictionary to store present and missing terms
+    terms_dict = {element: False for element in dc_elements}
+
+    # Iterate through the elements in the metadata file and check against the DC elements
+    for element in metadata_root.iter():
+        if element.tag.startswith('{http://purl.org/dc/'):
+            element_name = element.tag.split('}')[-1]
+            if element_name in dc_elements:
+                terms_dict[element_name] = True
+
+    # Print which elements are present and missing for each file
+    print(f"\nMetadata File: {metadata_path}")
+    for element, present in terms_dict.items():
+        print(f"{element}: {'✓' if present else '❌'}")
+
+    # Add the results to the DataFrame
+    results.append({'Metadata File': metadata_path, **terms_dict})
+
+# Create a Pandas DataFrame from the results
+df = pd.DataFrame(results)
+
+# Convert boolean values to check marks (True -> ✓, False -> ❌)
+df = df.applymap(lambda x: '✓' if x else '❌')
+
+# Display the DataFrame
+df
